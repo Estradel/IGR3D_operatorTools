@@ -1,0 +1,8 @@
+python-dotenv~=1.2.1
+psycopg2~=2.9.10
+streamlit ~= 1.52.0
+pydantic~=2.12.5
+streamlit-pydantic~=0.6.1rc3
+Faker~=38.2.0
+pandas~=2.3.3
+sqlalchemy~=2.0.44

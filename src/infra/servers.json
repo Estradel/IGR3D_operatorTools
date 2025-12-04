@@ -1,0 +1,13 @@
+{
+  "Servers": {
+    "1": {
+      "Name": "IGR3D",
+      "Group": "Servers",
+      "Host": "postgis",
+      "Port": 5433,
+      "MaintenanceDB": "IGR3D",
+      "Username": "admin",
+      "SSLMode": "prefer"
+    }
+  }
+}

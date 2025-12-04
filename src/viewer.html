@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        /* Nettoyage des accolades doubles pour du CSS standard */
+        body { margin: 0; overflow: hidden; background-color: #000; }
+        #info {
+            position: absolute; top: 10px; width: 100%; text-align: center;
+            color: white; font-family: sans-serif; pointer-events: none;
+            text-shadow: 1px 1px 2px black;
+        }
+    </style>
+    <script async src="https://unpkg.com/es-module-shims@1.6.3/dist/es-module-shims.js"></script>
+
+    <script type="importmap">
+        {
+          "imports": {
+            "three": "https://unpkg.com/three@0.154.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.154.0/examples/jsm/"
+          }
+        }
+    </script>
+</head>
+<body>
+<div id="info">Left Click: Rotate | Right Click: Pan | Scroll: Zoom</div>
+<script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { BVHLoader } from 'three/addons/loaders/BVHLoader.js';
+
+    // --- POINT D'INJECTION (Via Base64 pour éviter les erreurs de syntaxe) ---
+    const b64Data = "__BVH_BASE64_PLACEHOLDER__";
+
+    let camera, controls, scene, renderer;
+    let mixer, skeletonHelper;
+    const clock = new THREE.Clock();
+
+    init();
+    animate();
+
+    function init() {
+        // Setup Scene
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xeeeeee);
+
+        // On ajoute une grille temporaire
+        const grid = new THREE.GridHelper(400, 10);
+        scene.add(grid);
+
+        // Setup Camera (Position temporaire)
+        camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 10000);
+        camera.position.set(0, 200, 400);
+
+        // Setup Renderer
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Controls
+        controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; // Plus fluide
+
+        // Load BVH
+        // On vérifie qu'on a bien reçu des données
+        if (b64Data && !b64Data.includes("BVH_BASE64_PLACEHOLDER")) {
+            const loader = new BVHLoader();
+            try {
+                // 1. Décodage du Base64 en texte
+                const bvhString = atob(b64Data);
+
+                // 2. Parsing
+                const result = loader.parse(bvhString);
+                skeletonHelper = new THREE.SkeletonHelper(result.skeleton.bones[0]);
+                scene.add(result.skeleton.bones[0]);
+                scene.add(skeletonHelper);
+
+                // Setup Animation
+                mixer = new THREE.AnimationMixer(result.skeleton.bones[0]);
+                mixer.clipAction(result.clip).play();
+
+            } catch (error) {
+                console.error("Error parsing BVH:", error);
+                document.getElementById('info').innerText = "Error: " + error.message;
+            }
+        }
+
+        window.addEventListener('resize', onWindowResize);
+    }
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        const delta = clock.getDelta();
+        if (mixer) mixer.update(delta);
+        controls.update();
+        renderer.render(scene, camera);
+    }
+</script>
+</body>
+</html>
